@@ -1,0 +1,31 @@
+{
+  "name": "pnt",
+  "version": "0.1.0",
+  "description": "A cli for controlling your Point security systems",
+  "license": "MIT",
+  "repository": "samjbmason/pnt",
+  "homepage": "",
+  "author": "Sam Mason <sam.jbmason@gmail.com>",
+  "engines": {
+    "node": ">0.11.0"
+  },
+  "preferGlobal": true,
+  "bin": "cli.js",
+  "keywords": [
+    "cli",
+    "cli-app",
+    "point",
+    "minut",
+    "security",
+    "home"
+  ],
+  "dependencies": {
+    "axios": "^0.9.1",
+    "chalk": "^1.1.1",
+    "co": "^4.6.0",
+    "co-prompt": "^1.0.0",
+    "configstore": "^1.4.0",
+    "moment": "^2.11.2",
+    "vorpal": "^1.7.7"
+  }
+}
