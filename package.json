@@ -7,7 +7,7 @@
   "homepage": "",
   "author": "Sam Mason <sam.jbmason@gmail.com>",
   "engines": {
-    "node": ">0.11.0"
+    "node": ">=0.11.0"
   },
   "preferGlobal": true,
   "bin": {
