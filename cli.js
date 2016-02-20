@@ -12,6 +12,7 @@ const axios = require('axios');
 const moment = require('moment');
 const co = require('co');
 const prompt = require('co-prompt');
+const _ = require('lodash');
 
 
 
@@ -59,8 +60,10 @@ function auth (client_id, username, password) {
 
 
 function checkAuth() {
-  if (!conf.get('token')) {
-    console.log(chalk.yellow(`You don't have an access token yet! Run ${chalk.underline('pnt auth')} to get started.`))
+  if (conf.get('token')) {
+    return true
+  } else {
+    console.log(chalk.yellow(`You don't have an access token yet! Run ${chalk.underline('pnt auth')} to get started.`));
   }
 }
 
@@ -75,9 +78,14 @@ function formatDate(date) {
   return moment(date).format('HH:mm DD/MM/YYYY');
 }
 
+
+
+
 /*
  * Commands
  */
+
+
 
  /**
  * Generate access token
@@ -90,14 +98,12 @@ vorpal
   .command('auth')
   .description('Authenticates user & generates access token.')
   .action(function (args, cb) {
-    if(!checkAuth) {
-      co(function *() {
-        var clientID = yield prompt('Client ID: ');
-        var username = yield prompt('Username: ');
-        var password = yield prompt.password('Password: ');
-        auth(clientID, username, password);
-      });
-    }
+    co(function *() {
+      var clientID = yield prompt('Client ID: ');
+      var username = yield prompt('Username: ');
+      var password = yield prompt.password('Password: ');
+      auth(clientID, username, password);
+    });
   });
 
 
@@ -121,12 +127,12 @@ vorpal
       for (var device of res.data.devices) {
         devices[device.description] = device.device_id;
 
-        console.log(chalk.green('Name: ') + device.description);
-        console.log(chalk.green('ID: ') + device.device_id);
+        console.log(chalk.blue('Name: ') + device.description);
+        console.log(chalk.blue('ID: ') + device.device_id);
         if (args.options.verbose) {
-          console.log(chalk.green('Offline: ') + device.offline)
-          console.log(chalk.green('Active: ') + device.active)
-          console.log(chalk.green('Last seen: ') + formatDate(device.last_heard_from_at))
+          console.log(chalk.blue('Offline: ') + device.offline)
+          console.log(chalk.blue('Active: ') + device.active)
+          console.log(chalk.blue('Last seen: ') + formatDate(device.last_heard_from_at))
         }
         console.log('\n')
       }
@@ -136,70 +142,113 @@ vorpal
 
 
 
+  /**
+  * Get Temperature
+  *
+  * @param {string} Device - Name of device
+  * @return {string} - Most recent temp in celsius and the timestamp
+  */
 vorpal
   .command('temp [device]')
   .description('Gets the temperature (°C) of a Point (defaults to the first Point found)')
-  .option('-n', '--number', '')
+  .validate(checkAuth)
   .action(function (args, cb) {
     let device = getDevice(args);
-    console.log(chalk.green('Point: ') + device.name)
+
+    console.log(chalk.blue('Point: ') + device.name)
+
     req.get(`/devices/${device.id}/temperature`)
     .then(function (res) {
-      console.log(`${res.data.values[0]}°C`)
+      let newest = _.last(res.data.values)
+      console.log(chalk.blue('Temp: ') + `${newest.value}°C`);
+      console.log(chalk.blue('Time: ') + formatDate(newest.datetime));
     });
   });
 
+
+
+  /**
+  * Get Humidity
+  *
+  * @param {string} Device - Name of device
+  * @return {string} - Most recent humidity in percentage and the timestamp
+  */
 vorpal
   .command('humidity [device]')
   .description('Gets the humidity (%) from a Point (defaults to the first Point found)')
-  .option('-n', '--number', '')
+  .validate(checkAuth)
   .action(function (args, cb) {
     let device = getDevice(args);
-    console.log(chalk.green('Point: ') + device.name)
+    console.log(chalk.blue('Point: ') + device.name)
     req.get(`/devices/${device.id}/humidity`)
     .then(function (res) {
-      console.log(`${res.data.values[0]}%`)
+      let newest = _.last(res.data.values)
+      console.log(chalk.blue('Humidity: ') + `${newest.value}%`);
+      console.log(chalk.blue('Time: ') + formatDate(newest.datetime));
     });
   });
 
 
 
-
-
+  /**
+  * Get Sound level
+  *
+  * @param {string} Device - Name of device
+  * @return {string} - Most recent sound in db and the timestamp
+  */
 vorpal
   .command('sound [device]')
+  .alias('noise')
   .description('Gets the average sound level (db) from a Point (defaults to the first Point found)')
-  .option('-n', '--number', '')
+  .validate(checkAuth)
   .action(function (args, cb) {
     let device = getDevice(args);
-    console.log(chalk.green('Point: ') + device.name)
+    console.log(chalk.blue('Point: ') + device.name)
     req.get(`/devices/${device.id}/sound_avg_levels`)
     .then(function (res) {
-      console.log(`${res.data.values[0]}db`)
+      let newest = _.last(res.data.values)
+      console.log(chalk.blue('Avg sound: ') + `${newest.value}%`);
+      console.log(chalk.blue('Time: ') + formatDate(newest.datetime));
     });
   });
 
 
+
+  /**
+  * Get the timeline
+  *
+  * @param {string} event - Number of events you wish to retrieve
+  * @return {string} - All the recorded events from your points timeline
+  */
 vorpal
   .command('timeline')
+  .description('Retrieve your homes timeline (defaults to 10 events)')
+  .option('-e, --events', 'Specify how many events you would like to retrieve')
+  .validate(checkAuth)
   .action(function (args, cb) {
     var config = {
       params: {
-        limit: args.options.limit || 10
+        limit: 200
       }
     }
     req.get('/timelines/me', config)
     .then(function (res) {
-      for (var event of res.data.events) {
-        console.log(chalk.green('Date: ') + formatDate(event.datetime))
-        console.log(chalk.green('Event: ') + event.type)
-        console.log(chalk.blue('||'))
-        console.log(chalk.blue('\\/'))
+      let timeline = res.data.events;
+      let newTimelineLength = args.options.events || 10;
+      let newTimeline = timeline.slice(-newTimelineLength)
+
+      console.log(chalk.green('↓ Past'))
+      for (var event of newTimeline) {
+        console.log(chalk.yellow('↓'))
+        console.log(chalk.blue('↓ Date: ') + formatDate(event.datetime))
+        console.log(chalk.blue('↓ Event: ') + event.type)
       }
-      console.log(chalk.green('NOW'))
+      console.log(chalk.green('→ Present'))
     });
   });
 
 
-  vorpal
-    .parse(process.argv);
+
+// Kick stuff off
+vorpal
+  .parse(process.argv);

@@ -25,6 +25,7 @@
     "co": "^4.6.0",
     "co-prompt": "^1.0.0",
     "configstore": "^1.4.0",
+    "lodash": "^4.5.0",
     "moment": "^2.11.2",
     "vorpal": "^1.7.7"
   }
