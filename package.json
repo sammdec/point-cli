@@ -1,5 +1,5 @@
 {
-  "name": "pnt",
+  "name": "point-cli",
   "version": "0.1.0",
   "description": "A cli for controlling your Point security systems",
   "license": "MIT",
@@ -10,7 +10,9 @@
     "node": ">0.11.0"
   },
   "preferGlobal": true,
-  "bin": "cli.js",
+  "bin": {
+    "point": "./cli.js"
+  },
   "keywords": [
     "cli",
     "cli-app",

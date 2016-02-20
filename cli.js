@@ -28,13 +28,6 @@ const req = axios.create({
 })
 
 /*
- * Test Details
- */
- // client_id: c33c3776f220cd90
- // username: live1@minut.com
- // password: superhero1
-
-/*
  * Methods
  */
 function auth (client_id, username, password) {
@@ -63,7 +56,7 @@ function checkAuth() {
   if (conf.get('token')) {
     return true
   } else {
-    console.log(chalk.yellow(`You don't have an access token yet! Run ${chalk.underline('pnt auth')} to get started.`));
+    console.log(chalk.yellow(`You don't have an access token yet! Run ${chalk.underline('point auth')} to get started.`));
   }
 }
 
