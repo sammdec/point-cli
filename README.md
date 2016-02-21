@@ -44,6 +44,6 @@ Time: 16:49 13/01/2016
 
 ## TODO
 - [ ] Use stored devices as autocomplete suggestions
-- [ ] Version command
+- [x] Version command
 - [x] Remove `exit` command
 - [ ] Keep up to date with new api versions

@@ -73,6 +73,16 @@ function formatDate (date) {
  */
 
 /**
+  * Get current version
+  */
+vorpal
+  .command('version')
+  .description('Gets current version')
+  .action(function (args, cb) {
+    this.log(`point-cli v${pkg.version}`)
+  })
+
+/**
   * Generate access token
   *
   * @param {string} clientID - User's unique client ID.
