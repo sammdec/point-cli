@@ -224,5 +224,7 @@ vorpal
     })
   })
 
+vorpal.find('exit').remove()
+
 // Kick stuff off
 vorpal.parse(process.argv)
