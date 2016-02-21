@@ -3,11 +3,14 @@
   "version": "0.1.0",
   "description": "A cli for controlling your Point security systems",
   "license": "MIT",
-  "repository": "samjbmason/pnt",
-  "homepage": "",
+  "repository": "samjbmason/point-cli",
+  "homepage": "https://github.com/samjbmason/point-cli",
   "author": "Sam Mason <sam.jbmason@gmail.com>",
   "engines": {
     "node": ">=0.11.0"
+  },
+  "scripts": {
+    "test": "standard"
   },
   "preferGlobal": true,
   "bin": {
@@ -27,8 +30,11 @@
     "co": "^4.6.0",
     "co-prompt": "^1.0.0",
     "configstore": "^1.4.0",
+    "dateformat": "^1.0.12",
     "lodash": "^4.5.0",
-    "moment": "^2.11.2",
-    "vorpal": "^1.7.7"
+    "vorpal": "^1.9.5"
+  },
+  "devDependencies": {
+    "standard": "^6.0.7"
   }
 }

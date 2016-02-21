@@ -1,4 +1,4 @@
-# point-cli
+# point-cli [![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg)](http://standardjs.com/)
 > Check on your home from the command line with [Point](https://minut.com/)
 
 ## Install

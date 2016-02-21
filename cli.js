@@ -1,27 +1,25 @@
 #!/usr/bin/env node
-'use strict';
+'use strict'
 
 /*
  * Dependencies
  */
-const vorpal = require('vorpal')();
-const Configstore = require('configstore');
-const pkg = require('./package.json');
-const chalk = require('chalk');
-const axios = require('axios');
-const moment = require('moment');
-const co = require('co');
-const prompt = require('co-prompt');
-const _ = require('lodash');
-
-
+const vorpal = require('vorpal')()
+const Configstore = require('configstore')
+const pkg = require('./package.json')
+const chalk = require('chalk')
+const axios = require('axios')
+const dateFormat = require('dateFormat')
+const co = require('co')
+const prompt = require('co-prompt')
+const _ = require('lodash')
 
 /*
  * Constants
  */
-let devices = {};
-const conf = new Configstore(pkg.name);
-const apiURL = 'https://api.minut.com/draft1';
+let devices = {}
+const conf = new Configstore(pkg.name)
+const apiURL = 'https://api.minut.com/draft1'
 const req = axios.create({
   baseURL: apiURL,
   headers: {'Authorization': `Bearer ${conf.get('token')}`}
@@ -51,8 +49,7 @@ function auth (client_id, username, password) {
   })
 }
 
-
-function checkAuth() {
+function checkAuth () {
   if (conf.get('token')) {
     return true
   } else {
@@ -60,48 +57,41 @@ function checkAuth() {
   }
 }
 
-function getDevice(args) {
-  let devices = conf.get('devices');
-  let deviceName = args.device || Object.keys(devices)[0];
-  let deviceID = devices[deviceName];
-  return { name: deviceName, id: deviceID };
+function getDevice (args) {
+  let devices = conf.get('devices')
+  let deviceName = args.device || Object.keys(devices)[0]
+  let deviceID = devices[deviceName]
+  return { name: deviceName, id: deviceID }
 }
 
-function formatDate(date) {
-  return moment(date).format('HH:mm DD/MM/YYYY');
+function formatDate (date) {
+  return dateFormat(date, 'HH:MM dd/mm/yyyy')
 }
-
-
-
 
 /*
  * Commands
  */
 
-
-
- /**
- * Generate access token
- *
- * @param {string} clientID - User's unique client ID.
- * @param {string} Username - Email Address used to login to Point account.
- * @param {string} Password - Password used to login to Point account.
- */
+/**
+  * Generate access token
+  *
+  * @param {string} clientID - User's unique client ID.
+  * @param {string} Username - Email Address used to login to Point account.
+  * @param {string} Password - Password used to login to Point account.
+  */
 vorpal
   .command('auth')
   .description('Authenticates user & generates access token.')
   .action(function (args, cb) {
     co(function *() {
-      var clientID = yield prompt('Client ID: ');
-      var username = yield prompt('Username: ');
-      var password = yield prompt.password('Password: ');
-      auth(clientID, username, password);
-    });
-  });
+      var clientID = yield prompt('Client ID: ')
+      var username = yield prompt('Username: ')
+      var password = yield prompt.password('Password: ')
+      auth(clientID, username, password)
+    })
+  })
 
-
-
-  /**
+/**
   * Lists Devices
   *
   * @param {string} clientID - User's unique client ID.
@@ -114,28 +104,26 @@ vorpal
   .description('Gets all Points of user.')
   .option('-v, --verbose', 'Gets verbose details for devices')
   .validate(checkAuth)
-  .action(function(args, cb){
+  .action(function (args, cb) {
     req.get('/devices')
     .then(function (res) {
       for (var device of res.data.devices) {
-        devices[device.description] = device.device_id;
+        devices[device.description] = device.device_id
 
-        console.log(chalk.blue('Name: ') + device.description);
-        console.log(chalk.blue('ID: ') + device.device_id);
+        console.log(chalk.blue('Name: ') + device.description)
+        console.log(chalk.blue('ID: ') + device.device_id)
         if (args.options.verbose) {
-          console.log(chalk.blue('Offline: ') + device.offline)
-          console.log(chalk.blue('Active: ') + device.active)
+          console.log(chalk.blue('Online: ') + (!device.offline ? '✔' : '✗'))
+          console.log(chalk.blue('Active: ') + (device.active ? '✔' : '✗'))
           console.log(chalk.blue('Last seen: ') + formatDate(device.last_heard_from_at))
         }
         console.log('\n')
       }
-      conf.set('devices', devices);
-    });
-  });
+      conf.set('devices', devices)
+    })
+  })
 
-
-
-  /**
+/**
   * Get Temperature
   *
   * @param {string} Device - Name of device
@@ -144,23 +132,23 @@ vorpal
 vorpal
   .command('temp [device]')
   .description('Gets the temperature (°C) of a Point (defaults to the first Point found)')
-  .validate(checkAuth)
+  .validate(function () {
+    return
+  })
   .action(function (args, cb) {
-    let device = getDevice(args);
+    let device = getDevice(args)
 
     console.log(chalk.blue('Point: ') + device.name)
 
     req.get(`/devices/${device.id}/temperature`)
     .then(function (res) {
       let newest = _.last(res.data.values)
-      console.log(chalk.blue('Temp: ') + `${newest.value}°C`);
-      console.log(chalk.blue('Time: ') + formatDate(newest.datetime));
-    });
-  });
+      console.log(chalk.blue('Temp: ') + `${_.round(newest.value, 2)}°C`)
+      console.log(chalk.blue('Time: ') + formatDate(newest.datetime))
+    })
+  })
 
-
-
-  /**
+/**
   * Get Humidity
   *
   * @param {string} Device - Name of device
@@ -171,19 +159,17 @@ vorpal
   .description('Gets the humidity (%) from a Point (defaults to the first Point found)')
   .validate(checkAuth)
   .action(function (args, cb) {
-    let device = getDevice(args);
+    let device = getDevice(args)
     console.log(chalk.blue('Point: ') + device.name)
     req.get(`/devices/${device.id}/humidity`)
     .then(function (res) {
       let newest = _.last(res.data.values)
-      console.log(chalk.blue('Humidity: ') + `${newest.value}%`);
-      console.log(chalk.blue('Time: ') + formatDate(newest.datetime));
-    });
-  });
+      console.log(chalk.blue('Humidity: ') + `${newest.value}%`)
+      console.log(chalk.blue('Time: ') + formatDate(newest.datetime))
+    })
+  })
 
-
-
-  /**
+/**
   * Get Sound level
   *
   * @param {string} Device - Name of device
@@ -195,19 +181,17 @@ vorpal
   .description('Gets the average sound level (db) from a Point (defaults to the first Point found)')
   .validate(checkAuth)
   .action(function (args, cb) {
-    let device = getDevice(args);
+    let device = getDevice(args)
     console.log(chalk.blue('Point: ') + device.name)
     req.get(`/devices/${device.id}/sound_avg_levels`)
     .then(function (res) {
       let newest = _.last(res.data.values)
-      console.log(chalk.blue('Avg sound: ') + `${newest.value}%`);
-      console.log(chalk.blue('Time: ') + formatDate(newest.datetime));
-    });
-  });
+      console.log(chalk.blue('Avg sound: ') + `${newest.value}%`)
+      console.log(chalk.blue('Time: ') + formatDate(newest.datetime))
+    })
+  })
 
-
-
-  /**
+/**
   * Get the timeline
   *
   * @param {string} event - Number of events you wish to retrieve
@@ -226,8 +210,8 @@ vorpal
     }
     req.get('/timelines/me', config)
     .then(function (res) {
-      let timeline = res.data.events;
-      let newTimelineLength = args.options.events || 10;
+      let timeline = res.data.events
+      let newTimelineLength = args.options.events || 10
       let newTimeline = timeline.slice(-newTimelineLength)
 
       console.log(chalk.green('↓ Past'))
@@ -237,11 +221,8 @@ vorpal
         console.log(chalk.blue('↓ Event: ') + event.type)
       }
       console.log(chalk.green('→ Present'))
-    });
-  });
-
-
+    })
+  })
 
 // Kick stuff off
-vorpal
-  .parse(process.argv);
+vorpal.parse(process.argv)
