@@ -5,6 +5,7 @@
   "license": "MIT",
   "repository": "samjbmason/point-cli",
   "homepage": "https://github.com/samjbmason/point-cli",
+  "bugs": "https://github.com/samjbmason/point-cli/issues",
   "author": "Sam Mason <sam.jbmason@gmail.com>",
   "engines": {
     "node": ">=0.11.0"
