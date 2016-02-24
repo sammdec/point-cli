@@ -12,10 +12,10 @@ $ npm install -g point-cli
 First off send a nice email to marcus@minut.com to get your `client_id` & `client_secret`. Once you have these you can login:
 
 ```
-point auth
+$ point auth
 
 Client ID: <client_id>
-Username: <username for your point account>
+Username: <username for your Point account>
 Password: <password for your Point account>
 ```
 
@@ -28,7 +28,7 @@ This will fetch all the Point devices you own
 $ point devices
 
   Options
-    -v --v   Gets verbose details for devices
+    -v | --v   Gets verbose details for devices
 
 Name: Living Room
 ID: 83984398hfjjf90j0j
@@ -101,3 +101,7 @@ Event: Device Button Short Press
 ...
 → Present
 ```
+
+## License
+MIT License (MIT)
+Copyright (c) 2016 Sam Mason
