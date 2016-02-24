@@ -1,6 +1,6 @@
 {
   "name": "point-cli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A cli for controlling your Point security systems",
   "license": "MIT",
   "repository": "samjbmason/point-cli",
