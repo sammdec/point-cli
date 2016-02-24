@@ -21,29 +21,83 @@ Password: <password for your Point account>
 
 **Note: Your username & password are never stored, they are only sent to Point retrieve an access key, this is then stored on your computer at `~/.config/configstore/point-cli.json`**
 
-#### Devices
+#### List Devices
 This will fetch all the Point devices you own
 
 ```
-point devices
+$ point devices
+
+  Options
+    -v --v   Gets verbose details for devices
 
 Name: Living Room
 ID: 83984398hfjjf90j0j
+
+or
+
+$ point devices --verbose
+
+Name: Living Room
+ID: 83984398hfjjf90j0j
+Online: ✔
+Active: ✔
+Last seen: 18:43 24/02/2016
 ```
 
-#### Temperature
-This will fetch all the Point devices you own
+
+#### Get Temperature
+This will fetch the temperature for the Point device specified or the first one found
 
 ```
-point temp <device name>
+$ point temp <device name>
 
 Point: Living Room
-Temp: 24.125°C
-Time: 16:49 13/01/2016
+Temp: 23.25°C
+Time: 18:42 24/02/2016
 ```
 
-## TODO
-- [ ] Use stored devices as autocomplete suggestions
-- [x] Version command
-- [x] Remove `exit` command
-- [ ] Keep up to date with new api versions
+
+#### Get Humidity
+This will fetch the humidity for the Point device specified or the first one found
+
+```
+$ point humidity <device name>
+
+Point: Living Room
+Humidity: 50%
+Time: 18:42 24/02/2016
+```
+
+
+#### Get average sound levels
+This will fetch the average sound level for the Point device specified or the first one found
+
+```
+$ point sound <device name>
+or
+$ point noise <device name>
+
+Point: Living Room
+Avg sound: 54
+Time: 18:42 24/02/2016
+```
+
+#### Get your timeline
+This will fetch timeline for all your Points
+
+```
+$ point timeline
+
+→ Past
+↓
+Date: 08:47 19/02/2016
+Event: Home Humidity High
+↓
+Date: 20:32 22/02/2016
+Event: Home Humidity High
+↓
+Date: 22:35 22/02/2016
+Event: Device Button Short Press
+...
+→ Present
+```
