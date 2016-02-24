@@ -27,6 +27,8 @@ let req = axios.create({
 /*
  * Methods
  */
+
+ // Authorise the user
 function auth (client_id, username, password) {
   var config = {
     baseURL: apiURL,
@@ -51,6 +53,7 @@ function auth (client_id, username, password) {
   })
 }
 
+// Fetch all known devices for user and store
 function fetchDevices () {
   let config = {
     baseURL: apiURL,
@@ -73,6 +76,7 @@ function fetchDevices () {
     })
 }
 
+// Check authentication and exit if not authroised yet
 function checkAuth (args) {
   if (conf.get('token')) {
     return true
@@ -82,15 +86,18 @@ function checkAuth (args) {
   }
 }
 
+// Get a device of the name if recognised otherwise retrieve the first available
 function getDevice (deviceName) {
   let devices = conf.get('devices')
   return _.find(devices, ['name', deviceName]) || _.first(devices)
 }
 
+// Format the date to make it look nicer
 function formatDate (date) {
   return dateFormat(date, 'HH:MM dd/mm/yyyy')
 }
 
+// Remove colons from event type and start case all words
 function timelinePrettier(s) {
   let prettyString = _.chain(s)
                       .replace(/:/g, ' ')
