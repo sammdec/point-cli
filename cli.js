@@ -45,9 +45,7 @@ function auth (client_id, username, password) {
     conf.set('token', res.data.access_token)
     console.log(chalk.green('Access token generated and saved!'))
   })
-  .then(function() {
-    fetchDevices()
-  })
+  .then(fetchDevices)
   .catch(function (res) {
     console.log(chalk.yellow(res.data.message))
   })
