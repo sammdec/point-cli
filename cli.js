@@ -1,10 +1,10 @@
-#!/usr/bin/env node
+#!/usr/bin/env node --harmony
 'use strict'
 
 /*
  * Dependencies
  */
-const vorpal = require('vorpal')()
+const cmd = require('commander')
 const Configstore = require('configstore')
 const pkg = require('./package.json')
 const chalk = require('chalk')
@@ -17,10 +17,9 @@ const _ = require('lodash')
 /*
  * Constants
  */
-let devices = {}
 const conf = new Configstore(pkg.name)
 const apiURL = 'https://api.minut.com/draft1'
-const req = axios.create({
+let req = axios.create({
   baseURL: apiURL,
   headers: {'Authorization': `Bearer ${conf.get('token')}`}
 })
@@ -44,28 +43,60 @@ function auth (client_id, username, password) {
     conf.set('token', res.data.access_token)
     console.log(chalk.green('Access token generated and saved!'))
   })
+  .then(function() {
+    fetchDevices()
+  })
   .catch(function (res) {
     console.log(chalk.yellow(res.data.message))
   })
 }
 
-function checkAuth () {
+function fetchDevices () {
+  let config = {
+    baseURL: apiURL,
+    headers: {'Authorization': `Bearer ${conf.get('token')}`}
+  }
+
+  console.log(chalk.green('Fetching Points...'))
+
+  axios.get('/devices', config)
+    .then(function (res) {
+      console.log(`Found ${res.data.devices.length} Point`)
+      let allDevices = _.map(res.data.devices, function (n) {
+        console.log(`Name: ${n.description}`)
+        return {id: n.device_id, name: n.description}
+      })
+      conf.set('devices', allDevices)
+    })
+    .catch(function (res) {
+      console.log(chalk.red(res.data.message))
+    })
+}
+
+function checkAuth (args) {
   if (conf.get('token')) {
     return true
   } else {
-    console.log(chalk.yellow(`You don't have an access token yet! Run ${chalk.underline('point auth')} to get started.`));
+    console.log(chalk.yellow(`You don't have an access token yet! Run ${chalk.underline('point auth')} to get started.`))
+    process.exit(1)
   }
 }
 
-function getDevice (args) {
+function getDevice (deviceName) {
   let devices = conf.get('devices')
-  let deviceName = args.device || Object.keys(devices)[0]
-  let deviceID = devices[deviceName]
-  return { name: deviceName, id: deviceID }
+  return _.find(devices, ['name', deviceName]) || _.first(devices)
 }
 
 function formatDate (date) {
   return dateFormat(date, 'HH:MM dd/mm/yyyy')
+}
+
+function timelinePrettier(s) {
+  let prettyString = _.chain(s)
+                      .replace(/:/g, ' ')
+                      .startCase()
+                      .value()
+  return prettyString
 }
 
 /*
@@ -75,12 +106,7 @@ function formatDate (date) {
 /**
   * Get current version
   */
-vorpal
-  .command('version')
-  .description('Gets current version')
-  .action(function (args, cb) {
-    this.log(`point-cli v${pkg.version}`)
-  })
+cmd.version(pkg.version)
 
 /**
   * Generate access token
@@ -89,16 +115,37 @@ vorpal
   * @param {string} Username - Email Address used to login to Point account.
   * @param {string} Password - Password used to login to Point account.
   */
-vorpal
+cmd
   .command('auth')
   .description('Authenticates user & generates access token.')
-  .action(function (args, cb) {
+  .action(function (args, opts) {
     co(function *() {
       var clientID = yield prompt('Client ID: ')
       var username = yield prompt('Username: ')
       var password = yield prompt.password('Password: ')
       auth(clientID, username, password)
     })
+  })
+
+cmd
+  .command('logout')
+  .description('Logs out of point-cli by deleting the stored api key and devices')
+  .action(function () {
+    conf.clear()
+  })
+
+/**
+  * Fetches Devices
+  *
+  * @return {Array.<string>} - Device Name and ID
+  */
+cmd
+  .command('fetch')
+  .description('Fetch new devices that have been installed')
+  .action(function () {
+    checkAuth()
+
+    fetchDevices()
   })
 
 /**
@@ -109,28 +156,26 @@ vorpal
   * @param {string} Password - Password used to login to Point account.
   * @return {Array.<string>} - Device Name and ID
   */
-vorpal
+cmd
   .command('devices')
   .description('Gets all Points of user.')
   .option('-v, --verbose', 'Gets verbose details for devices')
-  .validate(checkAuth)
-  .action(function (args, cb) {
-    req.get('/devices')
-    .then(function (res) {
-      for (var device of res.data.devices) {
-        devices[device.description] = device.device_id
+  .action(function (verbose, opts) {
+    checkAuth()
 
-        console.log(chalk.blue('Name: ') + device.description)
-        console.log(chalk.blue('ID: ') + device.device_id)
-        if (args.options.verbose) {
-          console.log(chalk.blue('Online: ') + (!device.offline ? '✔' : '✗'))
-          console.log(chalk.blue('Active: ') + (device.active ? '✔' : '✗'))
-          console.log(chalk.blue('Last seen: ') + formatDate(device.last_heard_from_at))
+    req.get('/devices')
+      .then(function (res) {
+        for (var device of res.data.devices) {
+          console.log('Name: ' + chalk.blue(device.description))
+          console.log('ID: ' + chalk.blue(device.device_id))
+          if (verbose) {
+            console.log('Online: ' + chalk.blue(!device.offline ? '✔' : '✗'))
+            console.log('Active: ' + chalk.blue(device.active ? '✔' : '✗'))
+            console.log('Last seen: ' + chalk.blue(formatDate(device.last_heard_from_at)))
+          }
+          if (res.data.devices > 1) {console.log('\n')}
         }
-        console.log('\n')
-      }
-      conf.set('devices', devices)
-    })
+      })
   })
 
 /**
@@ -139,23 +184,21 @@ vorpal
   * @param {string} Device - Name of device
   * @return {string} - Most recent temp in celsius and the timestamp
   */
-vorpal
+cmd
   .command('temp [device]')
   .description('Gets the temperature (°C) of a Point (defaults to the first Point found)')
-  .validate(function () {
-    return
-  })
-  .action(function (args, cb) {
-    let device = getDevice(args)
+  .action(function (device, options) {
+    checkAuth()
 
-    console.log(chalk.blue('Point: ') + device.name)
+    let point = getDevice(device)
+    console.log('Point: ' + chalk.blue(point.name))
 
-    req.get(`/devices/${device.id}/temperature`)
-    .then(function (res) {
-      let newest = _.last(res.data.values)
-      console.log(chalk.blue('Temp: ') + `${_.round(newest.value, 2)}°C`)
-      console.log(chalk.blue('Time: ') + formatDate(newest.datetime))
-    })
+    req.get(`/devices/${point.id}/temperature`)
+      .then(function (res) {
+        let newest = _.last(res.data.values)
+        console.log('Temp: ' + chalk.blue(`${_.round(newest.value, 2)}°C`))
+        console.log('Time: ' + chalk.blue(formatDate(newest.datetime)))
+      })
   })
 
 /**
@@ -164,19 +207,21 @@ vorpal
   * @param {string} Device - Name of device
   * @return {string} - Most recent humidity in percentage and the timestamp
   */
-vorpal
+cmd
   .command('humidity [device]')
   .description('Gets the humidity (%) from a Point (defaults to the first Point found)')
-  .validate(checkAuth)
-  .action(function (args, cb) {
-    let device = getDevice(args)
-    console.log(chalk.blue('Point: ') + device.name)
-    req.get(`/devices/${device.id}/humidity`)
-    .then(function (res) {
-      let newest = _.last(res.data.values)
-      console.log(chalk.blue('Humidity: ') + `${newest.value}%`)
-      console.log(chalk.blue('Time: ') + formatDate(newest.datetime))
-    })
+  .action(function (device, opts) {
+    checkAuth()
+
+    let point = getDevice(device)
+    console.log('Point: ' + chalk.blue(point.name))
+
+    req.get(`/devices/${point.id}/humidity`)
+      .then(function (res) {
+        let newest = _.last(res.data.values)
+        console.log('Humidity: ' + chalk.blue(`${newest.value}%`))
+        console.log('Time: ' + chalk.blue(formatDate(newest.datetime)))
+      })
   })
 
 /**
@@ -185,20 +230,22 @@ vorpal
   * @param {string} Device - Name of device
   * @return {string} - Most recent sound in db and the timestamp
   */
-vorpal
+cmd
   .command('sound [device]')
   .alias('noise')
   .description('Gets the average sound level (db) from a Point (defaults to the first Point found)')
-  .validate(checkAuth)
-  .action(function (args, cb) {
-    let device = getDevice(args)
-    console.log(chalk.blue('Point: ') + device.name)
-    req.get(`/devices/${device.id}/sound_avg_levels`)
-    .then(function (res) {
-      let newest = _.last(res.data.values)
-      console.log(chalk.blue('Avg sound: ') + `${newest.value}%`)
-      console.log(chalk.blue('Time: ') + formatDate(newest.datetime))
-    })
+  .action(function (device, opts) {
+    checkAuth()
+
+    let point = getDevice(device)
+    console.log('Point: ' + chalk.blue(point.name))
+
+    req.get(`/devices/${point.id}/sound_avg_levels`)
+      .then(function (res) {
+        let newest = _.last(res.data.values)
+        console.log('Avg sound: ' + chalk.blue(`${newest.value}%`))
+        console.log('Time: ' + chalk.blue(formatDate(newest.datetime)))
+      })
   })
 
 /**
@@ -207,34 +254,33 @@ vorpal
   * @param {string} event - Number of events you wish to retrieve
   * @return {string} - All the recorded events from your points timeline
   */
-vorpal
+cmd
   .command('timeline')
   .description('Retrieve your homes timeline (defaults to 10 events)')
   .option('-e, --events', 'Specify how many events you would like to retrieve')
-  .validate(checkAuth)
-  .action(function (args, cb) {
+  .action(function (args, opts) {
+    checkAuth()
+
     var config = {
       params: {
         limit: 200
       }
     }
     req.get('/timelines/me', config)
-    .then(function (res) {
-      let timeline = res.data.events
-      let newTimelineLength = args.options.events || 10
-      let newTimeline = timeline.slice(-newTimelineLength)
+      .then(function (res) {
+        let timeline = res.data.events
+        let newTimelineLength = args.options.events || 10
+        let newTimeline = timeline.slice(-newTimelineLength)
 
-      console.log(chalk.green('↓ Past'))
-      for (var event of newTimeline) {
-        console.log(chalk.yellow('↓'))
-        console.log(chalk.blue('↓ Date: ') + formatDate(event.datetime))
-        console.log(chalk.blue('↓ Event: ') + event.type)
-      }
-      console.log(chalk.green('→ Present'))
-    })
+        console.log(chalk.green('→ Past'))
+        for (var event of newTimeline) {
+          console.log(chalk.green('↓'))
+          console.log('Date: ' + chalk.blue(formatDate(event.datetime)))
+          console.log('Event: ' + chalk.blue(timelinePrettier(event.type)))
+        }
+        console.log(chalk.green('→ Present'))
+      })
   })
 
-vorpal.find('exit').remove()
-
 // Kick stuff off
-vorpal.parse(process.argv)
+cmd.parse(process.argv)
