@@ -166,8 +166,8 @@ cmd
 cmd
   .command('devices')
   .description('Gets all Points of user.')
-  .option('-v, --verbose', 'Gets verbose details for devices')
-  .action(function (verbose, opts) {
+  .option('-v, --verbose', 'Displays verbose details for devices')
+  .action(function (opts) {
     checkAuth()
 
     req.get('/devices')
@@ -175,7 +175,7 @@ cmd
         for (var device of res.data.devices) {
           console.log('Name: ' + chalk.blue(device.description))
           console.log('ID: ' + chalk.blue(device.device_id))
-          if (verbose) {
+          if (opts.verbose) {
             console.log('Online: ' + chalk.blue(!device.offline ? '✔' : '✗'))
             console.log('Active: ' + chalk.blue(device.active ? '✔' : '✗'))
             console.log('Last seen: ' + chalk.blue(formatDate(device.last_heard_from_at)))
@@ -250,7 +250,7 @@ cmd
     req.get(`/devices/${point.id}/sound_avg_levels`)
       .then(function (res) {
         let newest = _.last(res.data.values)
-        console.log('Avg sound: ' + chalk.blue(`${newest.value}%`))
+        console.log('Avg sound: ' + chalk.blue(newest.value))
         console.log('Time: ' + chalk.blue(formatDate(newest.datetime)))
       })
   })
