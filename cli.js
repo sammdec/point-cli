@@ -96,7 +96,7 @@ function formatDate (date) {
 }
 
 // Remove colons from event type and start case all words
-function timelinePrettier(s) {
+function timelinePrettier (s) {
   let prettyString = _.chain(s)
                       .replace(/:/g, ' ')
                       .startCase()
@@ -178,7 +178,7 @@ cmd
             console.log('Active: ' + chalk.blue(device.active ? '✔' : '✗'))
             console.log('Last seen: ' + chalk.blue(formatDate(device.last_heard_from_at)))
           }
-          if (res.data.devices > 1) {console.log('\n')}
+          if (res.data.devices > 1) { console.log('\n') }
         }
       })
   })
