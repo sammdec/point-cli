@@ -11,7 +11,8 @@
     "node": ">=0.11.0"
   },
   "scripts": {
-    "test": "standard"
+    "test": "standard",
+    "postversion": "git push && git push --tags && npm publish"
   },
   "preferGlobal": true,
   "bin": {
